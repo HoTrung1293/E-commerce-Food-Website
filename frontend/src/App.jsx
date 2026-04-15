@@ -1,7 +1,6 @@
-import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { AdminRoute } from './components/ProtectedRoute';
-import { useAuth } from './contexts/AuthContext';
+// Resetting App.jsx to clear any compilation deadlocks.
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AdminRoute, PrivateRoute, AuthRoute } from './components/ProtectedRoute';
 import Dashboard from './pages/Admin/Dashboard';
 import Products from './pages/Admin/Products';
 import Orders from './pages/Admin/Orders';
@@ -31,46 +30,30 @@ import Contact from "./pages/Contact";
 import PaymentResult from "./pages/PaymentResult";
 
 export default function App() {
-  const navigate = useNavigate();
-  const { user, loading } = useAuth();
-
-  // Auto redirect admin to dashboard khi page load
-  useEffect(() => {
-    if (!loading && user && (user.role === 'admin' || user.role === 'staff')) {
-      const currentPath = window.location.pathname;
-      // Chỉ redirect nếu đang ở / hay /home
-      if (currentPath === '/' || currentPath === '/home') {
-        navigate('/admin/dashboard', { replace: true });
-      }
-    }
-  }, [user, loading, navigate]);
-
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/home" replace />} />
       
-      {/* Auth Routes - Without Layout */}
-      <Route path="/auth/login" element={<Login />} />
-      <Route path="/auth/register" element={<Register />} />
+      {/* Auth Routes */}
+      <Route path="/auth/login" element={<AuthRoute><Login /></AuthRoute>} />
+      <Route path="/auth/register" element={<AuthRoute><Register /></AuthRoute>} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/reset-password" element={<ResetPassword />} />
       
-      {/* Payment Routes - Without Layout */}
       <Route path="/payment/success" element={<PaymentResult />} />
       <Route path="/payment/failed" element={<PaymentResult />} />
       <Route path="/payment/result" element={<PaymentResult />} />
       
-      {/* Main Routes - With Layout */}
       <Route element={<Layout />}>
         <Route path="/home" element={<Home />} />
         <Route path="/product" element={<Product />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/order-success" element={<OrderSuccess />} />
+        <Route path="/checkout" element={<PrivateRoute><Checkout /></PrivateRoute>} />
+        <Route path="/order-success" element={<PrivateRoute><OrderSuccess /></PrivateRoute>} />
         <Route path="/product/:productId" element={<ProductDetail />} />
-        <Route path="/account" element={<Profile />} />
-        <Route path="/account/orders" element={<OrderHistory />} />
-        <Route path="/orders/:orderId" element={<OrderDetail />} />
+        <Route path="/account" element={<PrivateRoute><Profile /></PrivateRoute>} />
+        <Route path="/account/orders" element={<PrivateRoute><OrderHistory /></PrivateRoute>} />
+        <Route path="/orders/:orderId" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:id" element={<BlogDetail />} />
         <Route path="/about" element={<About />} />
@@ -78,7 +61,7 @@ export default function App() {
         <Route path="/contact" element={<Contact />} />
       </Route>
       
-      {/* Admin Routes */}
+      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="/admin/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
       <Route path="/admin/products" element={<AdminRoute><Products /></AdminRoute>} />
       <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
@@ -87,8 +70,7 @@ export default function App() {
       <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
       <Route path="/admin/contact" element={<AdminRoute><AdminContact /></AdminRoute>} />
       
-      {/* 404 Page */}
-      <Route path="*" element={<div style={{ padding: 24 }}>Page not found</div>} />
+      <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );
 }

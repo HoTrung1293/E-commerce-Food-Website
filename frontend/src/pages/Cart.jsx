@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingCart, ArrowLeft, RefreshCcw, Tag } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -136,216 +143,271 @@ export default function CartPage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50/50 min-h-screen pb-20">
       {/* Breadcrumb */}
       <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3 text-sm text-gray-600">
-          <span 
+        <div className="max-w-7xl mx-auto px-4 py-4 text-sm flex items-center gap-2">
+          <Button 
+            variant="link" 
+            className="p-0 h-auto text-muted-foreground hover:text-primary"
             onClick={() => navigate('/homePage')}
-            className="text-green-700 font-semibold cursor-pointer hover:underline"
           >
             TRANG CHỦ
-          </span>
-          <span className="mx-2">/</span>
-          <span className="text-green-700 font-semibold">GIỎ HÀNG</span>
+          </Button>
+          <span className="text-muted-foreground">/</span>
+          <span className="font-semibold text-primary">GIỎ HÀNG</span>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-3">
-          <ShoppingCart className="w-8 h-8 text-green-600" />
-          Giỏ Hàng Của Bạn
-        </h1>
+      <div className="max-w-7xl mx-auto px-4 py-10">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-extrabold text-foreground flex items-center gap-3 tracking-tight">
+            <ShoppingCart className="w-8 h-8 text-primary" />
+            Giỏ Hàng Của Bạn
+            {cartItems.length > 0 && (
+              <Badge variant="secondary" className="ml-2 text-lg px-3">
+                {cartItems.length}
+              </Badge>
+            )}
+          </h1>
+        </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-6 py-4 rounded-xl mb-8 flex items-center gap-3">
+            <span className="text-xl">⚠️</span>
+            <p className="font-medium">{error}</p>
           </div>
         )}
 
         {cartItems.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <div className="text-gray-400 mb-4">
-              <ShoppingCart className="w-24 h-24 mx-auto" />
-            </div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Giỏ hàng trống</h2>
-            <p className="text-gray-600 mb-6">Bạn chưa có sản phẩm nào trong giỏ hàng.</p>
-            <button
-              onClick={() => navigate('/product')}
-              className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition"
-            >
-              Tiếp tục mua sắm
-            </button>
-          </div>
+          <Card className="max-w-2xl mx-auto border-dashed border-2 bg-transparent">
+            <CardContent className="flex flex-col items-center justify-center py-20 px-6 text-center">
+              <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-6">
+                <ShoppingCart className="w-12 h-12 text-muted-foreground" />
+              </div>
+              <CardTitle className="text-2xl font-bold mb-3">Giỏ hàng đang trống</CardTitle>
+              <p className="text-muted-foreground mb-8 text-lg max-w-sm">
+                Có vẻ như bạn chưa chọn được món ngon nào. Hãy khám phá thực đơn của chúng tôi ngay nhé!
+              </p>
+              <Button
+                size="lg"
+                onClick={() => navigate('/product')}
+                className="px-10 rounded-full font-bold shadow-lg"
+              >
+                Tiếp tục mua sắm
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
-          <div className="grid grid-cols-3 gap-6">
-            {/* Cart Items */}
-            <div className="col-span-2 space-y-4">
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                {/* Header */}
-                <div className="bg-green-600 text-white px-6 py-4 grid grid-cols-12 gap-4 font-semibold">
-                  <div className="col-span-5">SẢN PHẨM</div>
-                  <div className="col-span-2 text-center">GIÁ</div>
-                  <div className="col-span-3 text-center">SỐ LƯỢNG</div>
-                  <div className="col-span-2 text-right">TẠM TÍNH</div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            {/* Cart Items Area */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="overflow-hidden border-none shadow-xl shadow-gray-200/50">
+                {/* Desktop Header */}
+                <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-primary text-primary-foreground font-bold text-sm tracking-wider uppercase">
+                  <div className="col-span-6">Sản phẩm</div>
+                  <div className="col-span-2 text-center">Giá</div>
+                  <div className="col-span-2 text-center">Số lượng</div>
+                  <div className="col-span-2 text-right">Tổng</div>
                 </div>
 
-                {/* Items */}
-                <div className="divide-y">
+                <div className="divide-y divide-gray-100 bg-white">
                   {cartItems.map((item) => (
-                    <div key={item.cart_item_id} className="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50">
-                      {/* Product Info */}
-                      <div className="col-span-5 flex items-center gap-4">
-                        <button
+                    <div key={item.cart_item_id} className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-center transition-colors hover:bg-gray-50/50">
+                      {/* Product Mobile View Header */}
+                      <div className="md:hidden flex justify-between items-start">
+                         <div className="flex gap-4">
+                            <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                                <img 
+                                  src={item.product_avatar || 'https://placehold.co/100'} 
+                                  className="w-full h-full object-cover"
+                                  alt={item.product_name}
+                                />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900 line-clamp-2 leading-snug">{item.product_name}</h3>
+                                {item.variant_name && <p className="text-xs text-muted-foreground mt-1">{item.variant_name}</p>}
+                                <p className="text-primary font-bold mt-2">{(item.price || item.product_price || 0).toLocaleString('vi-VN')} ₫</p>
+                            </div>
+                         </div>
+                         <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 shrink-0" onClick={() => removeItem(item.cart_item_id)}>
+                            <Trash2 className="w-5 h-5" />
+                         </Button>
+                      </div>
+
+                      {/* Desktop Product Info */}
+                      <div className="col-span-6 hidden md:flex items-center gap-6">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-muted-foreground hover:text-destructive shrink-0"
                           onClick={() => removeItem(item.cart_item_id)}
-                          className="text-red-500 hover:text-red-700 transition"
-                          title="Xóa sản phẩm"
                         >
                           <Trash2 className="w-5 h-5" />
-                        </button>
-                        <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                          {item.product_avatar ? (
-                            <img 
-                              src={item.product_avatar} 
-                              alt={item.product_name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80"%3E%3Crect fill="%23f3f4f6" width="80" height="80"/%3E%3Ctext x="50%25" y="50%25" font-size="40" text-anchor="middle" dominant-baseline="middle"%3E📦%3C/text%3E%3C/svg%3E';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-3xl bg-gray-100">
-                              📦
-                            </div>
-                          )}
+                        </Button>
+                        <div className="w-24 h-24 bg-gray-100 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
+                          <img 
+                            src={item.product_avatar || 'https://placehold.co/100'} 
+                            alt={item.product_name}
+                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                          />
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-800 line-clamp-2">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="font-bold text-gray-900 text-lg leading-tight hover:text-primary transition-colors cursor-pointer" onClick={() => navigate(`/product/${item.product_id}`)}>
                             {item.product_name}
                           </h3>
-                          <p className="text-sm text-gray-600">
-                            {item.variant_name}
-                          </p>
+                          {item.variant_name && (
+                            <Badge variant="outline" className="w-fit text-[10px] py-0 px-2 uppercase tracking-tighter text-muted-foreground">
+                              {item.variant_name}
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
-                      {/* Price */}
-                      <div className="col-span-2 text-center">
-                        <span className="text-green-600 font-semibold">
+                      {/* Price (Desktop) */}
+                      <div className="col-span-2 hidden md:block text-center">
+                        <span className="font-bold text-foreground">
                           {(item.price || item.product_price || 0).toLocaleString('vi-VN')} ₫
                         </span>
                       </div>
 
-                      {/* Quantity */}
-                      <div className="col-span-3 flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => updateQuantity(item.cart_item_id, item.quantity - 1)}
-                          className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition"
-                          disabled={item.quantity <= 1}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <input
-                          type="text"
-                          value={item.quantity}
-                          readOnly
-                          className="w-16 text-center border border-gray-300 rounded py-1 font-semibold"
-                        />
-                        <button
-                          onClick={() => updateQuantity(item.cart_item_id, item.quantity + 1)}
-                          className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+                      {/* Quantity selector */}
+                      <div className="col-span-2 flex justify-center md:block">
+                        <div className="flex items-center justify-center bg-gray-100 rounded-full p-1 w-fit mx-auto border border-gray-200">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full hover:bg-white"
+                            onClick={() => updateQuantity(item.cart_item_id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                          >
+                            <Minus className="w-3 h-3 text-gray-600" />
+                          </Button>
+                          <span className="w-10 text-center font-extrabold text-sm">{item.quantity}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full hover:bg-white"
+                            onClick={() => updateQuantity(item.cart_item_id, item.quantity + 1)}
+                          >
+                            <Plus className="w-3 h-3 text-gray-600" />
+                          </Button>
+                        </div>
                       </div>
 
-                      {/* Subtotal */}
-                      <div className="col-span-2 text-right">
-                        <span className="text-lg font-bold text-gray-800">
+                      {/* Desktop Total Price */}
+                      <div className="col-span-2 hidden md:block text-right">
+                        <span className="text-xl font-black text-primary">
                           {((item.price || item.product_price || 0) * (item.quantity || 0)).toLocaleString('vi-VN')} ₫
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between">
-                <button
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                <Button
+                  variant="outline"
                   onClick={() => navigate('/product')}
-                  className="border-2 border-green-600 text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition"
+                  className="rounded-full px-8 py-6 h-auto font-bold border-2 hover:bg-primary/5 hover:text-primary hover:border-primary transition-all group"
                 >
-                  ← TIẾP TỤC XEM SẢN PHẨM
-                </button>
-                <button
+                  <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
+                  TIẾP TỤC MUA HÀNG
+                </Button>
+                <Button
+                  variant="secondary"
                   onClick={fetchCart}
-                  className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+                  className="rounded-full px-8 py-6 h-auto font-bold bg-gray-200 hover:bg-gray-300 h-auto"
                 >
+                  <RefreshCcw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                   CẬP NHẬT GIỎ HÀNG
-                </button>
+                </Button>
               </div>
             </div>
 
-            {/* Order Summary */}
-            <div className="col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-                <h2 className="text-xl font-bold text-gray-800 mb-6 pb-3 border-b-4 border-orange-500">
-                  CỘNG GIỎ HÀNG
-                </h2>
+            {/* Sidebar Summary Area */}
+            <div className="space-y-6">
+              <Card className="border-none shadow-2xl shadow-green-900/10 overflow-hidden sticky top-28">
+                <div className="bg-primary px-6 py-5">
+                  <h2 className="text-xl font-bold text-primary-foreground m-0 flex items-center justify-between">
+                    Tổng đơn hàng
+                    <div className="h-1 w-12 bg-orange-500 rounded-full"></div>
+                  </h2>
+                </div>
+                
+                <CardContent className="p-8 pt-10">
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground font-medium">Tạm tính</span>
+                      <span className="font-bold text-lg text-foreground">
+                        {subtotal.toLocaleString('vi-VN')} ₫
+                      </span>
+                    </div>
 
-                <div className="space-y-4 mb-6">
-                  <div className="flex items-center justify-between text-gray-700">
-                    <span>Tạm tính</span>
-                    <span className="font-semibold text-lg">
-                      {subtotal.toLocaleString('vi-VN')} ₫
-                    </span>
+                    <div className="flex items-center justify-between py-4 border-y border-dashed border-gray-200">
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground font-medium">Vận chuyển</span>
+                        <span className="text-[11px] text-green-600 font-bold uppercase tracking-widest mt-1">Đồng giá toàn lãnh thổ</span>
+                      </div>
+                      <span className="font-bold text-lg text-foreground">
+                        {shipping.toLocaleString('vi-VN')} ₫
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-2xl font-black pt-4">
+                      <span className="text-foreground">Tổng cộng</span>
+                      <span className="text-primary drop-shadow-[0_2px_4px_rgba(34,197,94,0.15)]">
+                        {total.toLocaleString('vi-VN')} ₫
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-gray-700 pb-4 border-b">
-                    <span>Phí vận chuyển</span>
-                    <span className="font-semibold text-lg">
-                      {shipping.toLocaleString('vi-VN')} ₫
-                    </span>
+                  <div className="mt-10 space-y-4">
+                    <Button
+                      size="lg"
+                      onClick={() => navigate('/checkout')}
+                      className="w-full rounded-2xl py-8 h-auto font-black text-xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all bg-gradient-to-br from-primary to-green-700 border-none"
+                    >
+                      THANH TOÁN NGAY
+                    </Button>
+                    
+                    <div className="p-5 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 group focus-within:border-primary transition-colors">
+                      <div className="flex items-center gap-2 mb-3 text-sm font-bold text-gray-700">
+                         <Tag className="w-4 h-4 text-primary" />
+                         MÃ ƯU ĐÃI
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Nhập mã giảm giá..."
+                          className="bg-white border-none shadow-sm focus-visible:ring-primary rounded-xl"
+                        />
+                        <Button variant="outline" className="rounded-xl font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white shrink-0">
+                          ÁP DỤNG
+                        </Button>
+                      </div>
+                    </div>
                   </div>
+                </CardContent>
 
-                  <div className="flex items-center justify-between text-gray-800 text-xl font-bold">
-                    <span>Tổng</span>
-                    <span className="text-green-600">
-                      {total.toLocaleString('vi-VN')} ₫
-                    </span>
+                <CardFooter className="bg-gray-50/80 p-6 flex flex-col items-center gap-3 border-t">
+                  <div className="flex gap-4 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                     <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" className="h-4" alt="Visa" />
+                     <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" className="h-4" alt="Mastercard" />
+                     <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-4" alt="PayPal" />
                   </div>
-                </div>
-
-                <button
-                  onClick={() => navigate('/checkout')}
-                  className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition mb-3"
-                >
-                  TIẾN HÀNH THANH TOÁN
-                </button>
-
-                <div className="bg-gray-50 rounded p-3 text-sm text-gray-600">
-                  <p className="mb-2">📌 <strong>Phiếu ưu đãi</strong></p>
-                  <input
-                    type="text"
-                    placeholder="Mã ưu đãi"
-                    className="w-full border border-gray-300 rounded px-3 py-2 mb-2"
-                  />
-                  <button className="w-full bg-gray-200 text-gray-700 py-2 rounded font-semibold hover:bg-gray-300 transition">
-                    Áp dụng
-                  </button>
-                </div>
-
-                <div className="mt-4 text-xs text-gray-500">
-                  <p>Trả tiền mỗi khi nhận hàng</p>
-                  <p className="mt-1">Trả tiền mỗi khi giao hàng chi tiết hơn</p>
-                </div>
-              </div>
+                  <p className="text-[10px] text-muted-foreground font-medium text-center leading-relaxed">
+                    Đảm bảo an toàn thanh toán 100% qua cổng VNPay/MoMo. 
+                    <br/>Vận chuyển nhanh chóng từ 2-4 ngày làm việc.
+                  </p>
+                </CardFooter>
+              </Card>
             </div>
           </div>
         )}
       </div>
     </div>
+
   );
 }

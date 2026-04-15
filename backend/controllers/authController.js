@@ -1,44 +1,16 @@
 const authService = require('../services/authService');
 const { sendPasswordResetEmail } = require('../config/nodemailer');
+const { validationResult } = require('express-validator');
 
-function validatePasswordStrength(password) {
-  const minLength = 8;
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-  if (password.length < minLength) {
-    return { isValid: false, message: 'Password must be at least 8 characters long' };
-  }
-  if (!hasUpperCase) {
-    return { isValid: false, message: 'Password must contain at least one uppercase letter' };
-  }
-  if (!hasLowerCase) {
-    return { isValid: false, message: 'Password must contain at least one lowercase letter' };
-  }
-  if (!hasNumber) {
-    return { isValid: false, message: 'Password must contain at least one number' };
-  }
-  if (!hasSpecialChar) {
-    return { isValid: false, message: 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)' };
-  }
-
-  return { isValid: true, message: 'Password is strong' };
-}
 
 async function register(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+
   try {
     const { name, email, phone, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'email and password required' });
-    }
-
-    // Validate password strength
-    const passwordValidation = validatePasswordStrength(password);
-    if (!passwordValidation.isValid) {
-      return res.status(400).json({ success: false, message: passwordValidation.message });
-    }
 
     const user = await authService.createUser({ name, email, phone, password });
     const token = authService.signToken({ id: user.id });
@@ -52,9 +24,13 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ success: false, message: 'email and password required' });
 
     const user = await authService.verifyPassword(email, password);
     if (!user) return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -132,10 +108,10 @@ async function resetPassword(req, res) {
       return res.status(400).json({ success: false, message: 'Token and password are required' });
     }
 
-    // Validate password strength
-    const passwordValidation = validatePasswordStrength(password);
-    if (!passwordValidation.isValid) {
-      return res.status(400).json({ success: false, message: passwordValidation.message });
+    // Note: resetPassword validation should also be added to the route
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
     }
 
     await authService.updatePassword(token, password);

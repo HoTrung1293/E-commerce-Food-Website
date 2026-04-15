@@ -1,5 +1,6 @@
 const productService = require('../services/productService.js');
 const { updateProductInRAG, deleteProductFromRAG } = require('../services/ragService.js');
+const { validationResult } = require('express-validator');
 
 // Lấy tất cả sản phẩm (trang chủ + trang sản phẩm)
 async function allProducts(req, res, next) {
@@ -11,6 +12,10 @@ async function allProducts(req, res, next) {
 
 // Lấy chi tiết sản phẩm
 async function detailProduct(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { productId } = req.params;
     const product = await productService.getProductDetail(productId);
@@ -32,11 +37,12 @@ async function productByType(req, res, next) {
 
 // Tìm kiếm sản phẩm theo tên
 async function productByName(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { name } = req.body;
-    if (!name) {
-      return res.status(400).json({ success: false, message: 'Name is required' });
-    }
     const products = await productService.searchProductByName(name);
     res.json({ success: true, data: products });
   } catch (err) { next(err); }
@@ -52,6 +58,10 @@ async function getAllProducts(req, res, next) {
 
 // Cập nhật sản phẩm
 async function updateProduct(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { productId } = req.params;
     const payload = { ...req.body };
@@ -102,6 +112,10 @@ async function deleteVariant(req, res, next) {
 }
 // Tạo sản phẩm mới (admin)
 async function createProduct(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const payload = { ...req.body };
 

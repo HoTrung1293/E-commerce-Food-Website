@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Package, ShoppingBag, Clock, CheckCircle, XCircle, Truck, ArrowLeft, X, MapPin, CreditCard, FileText, User, Star } from 'lucide-react';
+import { Package, ShoppingBag, Clock, CheckCircle, XCircle, Truck, ArrowLeft, X, MapPin, CreditCard, FileText, User, Star, ChevronRight, Search, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 export default function OrderHistory() {
   const { user, token, isAuthenticated } = useAuth();
@@ -21,12 +31,7 @@ export default function OrderHistory() {
 
 
 
-  // Chuyển hướng nếu chưa đăng nhập
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate('/auth/login');
-    }
-  }, [isAuthenticated, navigate]);
+
 
   // Lấy lịch sử đơn hàng
   useEffect(() => {
@@ -127,7 +132,7 @@ export default function OrderHistory() {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          orderId: selectedOrder?.id,
+          orderId: reviewingItem?.order_id,
           variantId: reviewingItem.variant_id,
           rating: reviewRating,
           comment: reviewComment?.trim() || ''
@@ -144,8 +149,8 @@ export default function OrderHistory() {
       if (res.ok) {
         alert('Gửi đánh giá thành công!');
         closeReviewModal();
-        if (selectedOrder?.id) {
-          fetchOrderReviewStatus(selectedOrder.id);
+        if (reviewingItem?.order_id) {
+          fetchOrderReviewStatus(reviewingItem.order_id);
         }
       } else {
         const msg = data?.message || `Gửi đánh giá thất bại (mã ${res.status}).`;
@@ -203,219 +208,227 @@ export default function OrderHistory() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => navigate('/account')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Quay lại trang cá nhân
-          </button>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <ShoppingBag className="w-8 h-8" />
-            Lịch sử đơn hàng
-          </h1>
+    <div className="min-h-screen bg-gray-50/50 pb-20">
+      {/* Breadcrumb Header */}
+      <div className="bg-white border-b sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <Button variant="link" onClick={() => navigate('/account')} className="h-auto p-0 text-muted-foreground hover:text-primary gap-2">
+                <ArrowLeft className="w-4 h-4" /> Quay lại tài khoản
+            </Button>
+            <div className="text-xs font-black text-slate-400 uppercase tracking-widest hidden sm:block">
+               {allOrders.length} Đơn hàng đã đặt
+            </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="flex flex-col md:flex-row items-end md:items-center justify-between gap-6 mb-12">
+           <div className="space-y-2">
+              <h1 className="text-4xl font-black text-slate-900 flex items-center gap-3 tracking-tighter uppercase">
+                 <ShoppingBag className="w-10 h-10 text-primary" />
+                 Lịch sử đơn hàng
+              </h1>
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Xem trạng thái và chi tiết các đơn hàng của bạn</p>
+           </div>
+           
+           <div className="w-full md:w-auto relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                placeholder="Tìm mã đơn hàng..." 
+                className="h-14 w-full md:w-64 rounded-2xl bg-white border-none shadow-xl shadow-gray-200/50 pl-12 font-bold focus:ring-2 focus:ring-primary/20 transition-all outline-none" 
+              />
+           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          {/* Filter tabs */}
-          <div className="flex gap-2 mb-6 flex-wrap">
-            <button
-              onClick={() => setSelectedStatus('all')}
-              className={`px-4 py-2 rounded-lg transition ${
-                selectedStatus === 'all'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        {/* Filter Toolbar */}
+        <div className="flex gap-2 mb-10 overflow-x-auto pb-4 scrollbar-hide no-scrollbar">
+           {[
+             { id: 'all', label: 'Tất cả Đơn', color: 'bg-slate-900', icon: <Package className="w-4 h-4" /> },
+             { id: 'pending', label: 'Chờ xác nhận', color: 'bg-yellow-500', icon: <Clock className="w-4 h-4" /> },
+             { id: 'confirmed', label: 'Đã xác nhận', color: 'bg-blue-500', icon: <CheckCircle className="w-4 h-4" /> },
+             { id: 'shipping', label: 'Đang giao', color: 'bg-indigo-500', icon: <Truck className="w-4 h-4" /> },
+             { id: 'delivered', label: 'Đã hoàn tất', color: 'bg-primary', icon: <CheckCircle className="w-4 h-4" /> },
+             { id: 'canceled', label: 'Đã hủy', color: 'bg-destructive', icon: <XCircle className="w-4 h-4" /> }
+           ].map((tab) => (
+             <Button
+               key={tab.id}
+               onClick={() => setSelectedStatus(tab.id)}
+               variant={selectedStatus === tab.id ? "default" : "secondary"}
+               className={`h-12 rounded-2xl px-6 gap-2 font-black text-xs uppercase tracking-widest transition-all ${selectedStatus === tab.id ? 'shadow-xl shadow-primary/20' : 'bg-white border hover:bg-slate-50'}`}
+             >
+                {tab.icon}
+                {tab.label}
+             </Button>
+           ))}
+        </div>
 
-              }`}
-            >
-              Tất cả
-            </button>
-            <button
-              onClick={() => setSelectedStatus('pending')}
-              className={`px-4 py-2 rounded-lg transition ${
-                selectedStatus === 'pending'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Chờ xác nhận
-            </button>
-            <button
-              onClick={() => setSelectedStatus('confirmed')}
-              className={`px-4 py-2 rounded-lg transition ${
-                selectedStatus === 'confirmed'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Đã xác nhận
-            </button>
-            <button
-              onClick={() => setSelectedStatus('shipping')}
-              className={`px-4 py-2 rounded-lg transition ${
-                selectedStatus === 'shipping'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Đang giao
-            </button>
-            <button
-              onClick={() => setSelectedStatus('delivered')}
-              className={`px-4 py-2 rounded-lg transition ${
-                selectedStatus === 'delivered'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Đã giao
-            </button>
-            <button
-              onClick={() => setSelectedStatus('canceled')}
-              className={`px-4 py-2 rounded-lg transition ${
-                selectedStatus === 'canceled'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Đã hủy
-            </button>
-          </div>
-
-          {/* Orders list */}
-          {ordersLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-              <p className="mt-2 text-gray-600">Đang tải đơn hàng...</p>
-            </div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Chưa có đơn hàng nào</p>
-              <button
-                onClick={() => navigate('/home')}
-                className="mt-4 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-              >
-                Tiếp tục mua sắm
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {orders.map((order) => (
-                <div
-                  key={order.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
-                  onClick={() => handleOrderClick(order.id)}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-semibold text-gray-800">Đơn hàng #{order.order_number || order.id}</p>
-                      <p className="text-sm text-gray-500">{formatDateTime(order.created_at)}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusColor(order.status)}`}>
-                      {getStatusIcon(order.status)}
-                      {getStatusText(order.status)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      <p>{order.total_items} sản phẩm</p>
-                      <p className={`font-medium ${order.payment_status === 'paid' ? 'text-green-600' : 'text-orange-600'}`}>
-                        {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">Tổng tiền</p>
-                      <p className="text-lg font-bold text-green-600">{formatPrice(order.total_price)}</p>
-                    </div>
-                  </div>
+        {/* Orders list */}
+        {ordersLoading ? (
+          <div className="space-y-6">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="rounded-[2.5rem] border-none shadow-xl p-8 space-y-4 bg-white">
+                <div className="flex justify-between items-center">
+                   <Skeleton className="h-6 w-1/4 rounded-lg" />
+                   <Skeleton className="h-6 w-32 rounded-full" />
                 </div>
-              ))}
+                <Separator />
+                <div className="flex justify-between items-center pt-2">
+                   <Skeleton className="h-10 w-1/3 rounded-lg" />
+                   <Skeleton className="h-10 w-1/4 rounded-lg" />
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : orders.length === 0 ? (
+          <Card className="rounded-[3rem] border-none shadow-2xl shadow-gray-200/50 p-20 text-center bg-white">
+            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8">
+               <Package className="w-10 h-10 text-slate-300" />
             </div>
-          )}
-        </div>
+            <h3 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Trống trải quá nhỉ?</h3>
+            <p className="text-sm font-bold text-slate-400 mb-10 max-w-xs mx-auto">Bạn chưa có đơn hàng nào hoặc các đơn hàng đã lọc không tồn tại.</p>
+            <Button
+              onClick={() => navigate('/product')}
+              className="h-14 px-10 rounded-2xl font-black text-lg shadow-xl shadow-primary/20"
+            >
+              TIẾP TỤC MUA SẮM
+            </Button>
+          </Card>
+        ) : (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {orders.map((order) => (
+              <Card
+                key={order.id}
+                className="group border-none shadow-xl shadow-gray-200/50 rounded-[2.5rem] overflow-hidden bg-white hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 cursor-pointer"
+                onClick={() => handleOrderClick(order.id)}
+              >
+                <CardHeader className="bg-slate-50/50 p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                     <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-lg group-hover:bg-primary transition-colors">
+                        <ShoppingBag className="w-6 h-6 text-primary group-hover:text-white" />
+                     </div>
+                     <div>
+                        <CardTitle className="text-xl font-black text-slate-900">Đơn hàng #{order.order_number || order.id.slice(-6).toUpperCase()}</CardTitle>
+                        <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {formatDateTime(order.created_at)}</p>
+                     </div>
+                  </div>
+                  
+                  <Badge className={`h-10 rounded-2xl px-5 border-none font-black text-[10px] uppercase tracking-widest gap-2 ${getStatusColor(order.status).replace('100', '10').replace('800', '700')}`}>
+                    {getStatusIcon(order.status)}
+                    {getStatusText(order.status)}
+                  </Badge>
+                </CardHeader>
 
-        {/* Popup đánh giá sản phẩm */}
-        {showReviewModal && reviewingItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl w-full max-w-md shadow-lg">
-              <div className="flex items-center justify-between px-5 py-4 border-b">
-                <h3 className="text-lg font-semibold">Đánh giá sản phẩm</h3>
-                <button onClick={closeReviewModal} className="p-2 hover:bg-gray-100 rounded-full">
-                  <X className="w-5 h-5" />
-                </button>
+                <CardContent className="p-8 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-10">
+                  <div className="flex flex-wrap items-center gap-10">
+                     <div className="space-y-1 text-center sm:text-left">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">Số lượng</p>
+                        <p className="text-lg font-black text-slate-900">{order.total_items} món ngon</p>
+                     </div>
+                     <Separator orientation="vertical" className="h-10 hidden sm:block" />
+                     <div className="space-y-1 text-center sm:text-left">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">Thanh toán</p>
+                        <Badge variant="outline" className={`rounded-xl px-3 border-2 font-black ${order.payment_status === 'paid' ? 'border-green-100 text-green-600 bg-green-50/50' : 'border-orange-100 text-orange-600 bg-orange-50/50'}`}>
+                           {order.payment_status === 'paid' ? 'ĐÃ TRẢ TIỀN' : 'CHƯA TRẢ TIỀN'}
+                        </Badge>
+                     </div>
+                  </div>
+
+                  <div className="text-center sm:text-right space-y-1">
+                     <p className="text-xs font-black text-slate-400 uppercase tracking-tighter">Thành tiền</p>
+                     <p className="text-3xl font-black text-primary leading-none tracking-tighter">{formatPrice(order.total_price)}</p>
+                  </div>
+                  
+                  <div className="hidden sm:block">
+                     <Button variant="ghost" size="icon" className="rounded-full w-12 h-12 hover:bg-slate-50 transition-all">
+                        <ChevronRight className="w-6 h-6 text-slate-300" />
+                     </Button>
+                  </div>
+                </CardContent>
+                
+                {order.status === 'delivered' && (
+                  <CardFooter className="bg-slate-50/30 p-6 flex justify-end gap-4 border-t border-slate-50">
+                     <Button variant="outline" className="rounded-xl font-black text-[10px] uppercase tracking-widest border-2 h-10 px-6">Mua lại</Button>
+                     <Button className="rounded-xl font-black text-[10px] uppercase tracking-widest h-10 px-6 shadow-lg shadow-primary/10" onClick={(e) => { e.stopPropagation(); /* Logic show items for review or redirect detail */ }}>Đánh giá</Button>
+                  </CardFooter>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modern Review Dialog */}
+      <Dialog open={showReviewModal} onOpenChange={(open) => !open && closeReviewModal()}>
+        <DialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+           <DialogHeader className="p-8 bg-slate-50 border-b">
+              <DialogTitle className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                 <Star className="w-6 h-6 text-yellow-500 fill-current" />
+                 Đánh Giá Món Ngon
+              </DialogTitle>
+           </DialogHeader>
+           
+           <div className="p-8 space-y-8">
+              {reviewingItem && (
+                 <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                   <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md">
+                      <img
+                        src={reviewingItem.product_avatar || '/placeholder.png'}
+                        alt={reviewingItem.product_name}
+                        className="w-full h-full object-cover"
+                      />
+                   </div>
+                   <div>
+                     <p className="font-black text-slate-800 leading-tight">{reviewingItem.product_name}</p>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{reviewingItem.variant_name} • {reviewingItem.unit}</p>
+                   </div>
+                 </div>
+              )}
+
+              <div className="space-y-4">
+                 <Label className="text-xs font-black text-slate-400 uppercase tracking-widest block text-center">Cảm nhận sản phẩm (1-5 sao)</Label>
+                 <div className="flex items-center justify-center gap-3">
+                   {[1,2,3,4,5].map((n) => (
+                     <button
+                       key={n}
+                       type="button"
+                       onClick={() => setReviewRating(n)}
+                       className="p-1 transition-transform active:scale-90"
+                     >
+                       <Star
+                         className={`w-10 h-10 transition-all ${reviewRating >= n ? 'text-yellow-400 drop-shadow-md fill-current scale-110' : 'text-slate-100 hover:text-slate-200'}`}
+                       />
+                     </button>
+                   ))}
+                 </div>
               </div>
 
-              <div className="px-5 py-4 space-y-4">
-                {/* Thông tin sản phẩm */}
-                <div className="flex items-center gap-3">
-                  <img
-                    src={reviewingItem.product_avatar || '/placeholder.png'}
-                    alt={reviewingItem.product_name}
-                    className="w-12 h-12 rounded object-cover"
-                    onError={(e) => { e.target.src = '/placeholder.png'; }}
-                  />
-                  <div>
-                    <p className="font-medium">{reviewingItem.product_name}</p>
-                    <p className="text-sm text-gray-600">{reviewingItem.variant_name} • {reviewingItem.unit}</p>
-                  </div>
-                </div>
-
-                {/* Chọn số sao */}
-                <div>
-                  <p className="text-sm text-gray-700 mb-2">Đánh giá của bạn</p>
-                  <div className="flex items-center gap-2">
-                    {[1,2,3,4,5].map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setReviewRating(n)}
-                        className="p-1"
-                        aria-label={`Chọn ${n} sao`}
-                      >
-                        <Star
-                          className={`w-7 h-7 ${reviewRating >= n ? 'text-yellow-400' : 'text-gray-300'}`}
-                          fill={reviewRating >= n ? 'currentColor' : 'none'}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Nhập bình luận */}
-                <div>
-                  <p className="text-sm text-gray-700 mb-2">Bình luận (không bắt buộc)</p>
-                  <textarea
+              <div className="space-y-3">
+                 <Label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Lời nhận xét</Label>
+                 <Textarea
                     rows={4}
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
-                    placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
-                    className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
+                    placeholder="Hãy thành thật chia sẻ trải nghiệm của bạn về hương vị món ăn..."
+                    className="rounded-2xl border-2 border-slate-100 focus-visible:ring-primary/20 font-bold p-5 resize-none h-32"
+                 />
               </div>
+           </div>
 
-              <div className="px-5 py-4 border-t flex items-center justify-end gap-3 bg-gray-50 rounded-b-xl">
-                <button onClick={closeReviewModal} className="px-4 py-2 rounded-lg border hover:bg-gray-100">Hủy</button>
-                <button
-                  onClick={handleSubmitReview}
-                  disabled={reviewSubmitting || reviewRating < 1}
-                  className={`px-5 py-2 rounded-lg text-white font-semibold shadow ${reviewSubmitting || reviewRating < 1 ? 'bg-green-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-                >
-                  {reviewSubmitting ? 'Đang gửi...' : 'Gửi đánh giá'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
+           <DialogFooter className="p-8 bg-slate-50 border-t gap-3 flex-row justify-end">
+              <DialogClose asChild>
+                 <Button variant="ghost" className="rounded-xl font-black">HỦY BỎ</Button>
+              </DialogClose>
+              <Button
+                onClick={handleSubmitReview}
+                disabled={reviewSubmitting || reviewRating < 1}
+                className="rounded-xl h-12 px-8 font-black shadow-xl shadow-primary/20"
+              >
+                {reviewSubmitting ? 'ĐANG GỬI...' : 'GỬI ĐÁNH GIÁ'}
+              </Button>
+           </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }

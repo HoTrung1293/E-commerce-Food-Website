@@ -30,3 +30,18 @@ export function PrivateRoute({ children }) {
 
   return children;
 }
+
+export function AuthRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+
+  if (user) {
+    if (user.role === 'admin' || user.role === 'staff') {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    return <Navigate to="/home" replace />;
+  }
+
+  return children;
+}

@@ -1,23 +1,19 @@
 const CartService = require('../services/cartService');
+const { validationResult } = require('express-validator');
 
 class CartController {
   // Thêm sản phẩm vào giỏ hàng
   static async addItem(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
     try {
       const { userId, productVariantId, quantity } = req.body;
 
-      if (!userId || !productVariantId || !quantity) {
-        return res.status(400).json({
-          success: false,
-          message: 'Missing required fields: userId, productVariantId, quantity'
-        });
-      }
-
-      if (quantity <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Quantity must be greater than 0'
-        });
+      if (req.userId !== Number(userId)) {
+        return res.status(403).json({ success: false, message: 'Forbidden: Cannot add item to another user\'s cart' });
       }
 
       // Gọi service xử lý logic
@@ -39,8 +35,16 @@ class CartController {
 
   // Xem giỏ hàng
   static async viewCart(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
     try {
       const { userId } = req.params;
+
+      if (req.userId !== Number(userId)) {
+        return res.status(403).json({ success: false, message: 'Forbidden: Cannot view another user\'s cart' });
+      }
 
       // Gọi service để lấy hoặc tạo cart
       let cart = await CartService.getCartByUserId(userId);
@@ -71,16 +75,13 @@ class CartController {
 
   // Cập nhật số lượng
   static async updateItem(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
     try {
       const { cartItemId } = req.params;
       const { quantity } = req.body;
-
-      if (!quantity || quantity <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid quantity'
-        });
-      }
 
       // Gọi service
       await CartService.updateItem(cartItemId, quantity);
@@ -142,14 +143,15 @@ class CartController {
 
   // Khôi phục giỏ hàng từ đơn hàng VNPay chưa thanh toán
   static async restoreCartFromUnpaidOrder(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
     try {
       const { userId, orderId } = req.body;
 
-      if (!userId || !orderId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Missing required fields: userId, orderId'
-        });
+      if (req.userId !== Number(userId)) {
+        return res.status(403).json({ success: false, message: 'Forbidden: Access denied' });
       }
 
       const result = await CartService.restoreCartFromOrder(userId, orderId);

@@ -1,7 +1,12 @@
 const OrderService = require('../services/orderService');
+const { validationResult } = require('express-validator');
 
 class OrderController {
   static async getCheckoutInfo(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
     try {
       const { cartId } = req.params;
       const checkoutInfo = await OrderService.getCheckoutInfo(cartId);
@@ -13,8 +18,13 @@ class OrderController {
   }
 
   static async createOrder(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
     try {
-      const { userId, cartId, shippingAddress, paymentMethod, note } = req.body;
+      const { cartId, shippingAddress, paymentMethod, note } = req.body;
+      const userId = req.userId; // Get from token
       if (!userId || !cartId) {
         return res.status(400).json({ success: false, message: 'Missing required fields: userId, cartId' });
       }
@@ -38,8 +48,16 @@ class OrderController {
   }
 
   static async getMyOrders(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
     try {
       const { userId } = req.params;
+
+      if (req.userId !== Number(userId)) {
+        return res.status(403).json({ success: false, message: 'Forbidden' });
+      }
       const { status, page = 1, limit = 20 } = req.query;
       const result = await OrderService.getMyOrders(userId, { status, page: Number(page), limit: Number(limit) });
       res.status(200).json({ success: true, data: result.orders, pagination: result.pagination });

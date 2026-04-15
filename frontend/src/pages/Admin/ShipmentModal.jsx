@@ -1,4 +1,24 @@
+
 import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Truck, Package, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function ShipmentModal({ orderId, isOpen, onClose, orderStatus, onSave, token }) {
   const [formData, setFormData] = useState({
@@ -46,35 +66,31 @@ export default function ShipmentModal({ orderId, isOpen, onClose, orderStatus, o
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleCarrierChange = (value) => {
+    setFormData(prev => ({ ...prev, carrier: value }));
     setError('');
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError('');
     setSuccessMsg('');
 
     try {
       setLoading(true);
 
-      // Validation - bắt buộc các field cơ bản
       if (!formData.tracking_number || !formData.carrier || !formData.shipped_date) {
-        setError('Vui lòng điền đầy đủ: Mã vận đơn, Nhà vận chuyển, Ngày gửi hàng');
+        setError('Vui lòng điền đủ: Mã vận đơn, Nhà vận chuyển và Ngày gửi hàng.');
         setLoading(false);
         return;
       }
 
-      const payload = {};
-      if (formData.tracking_number) payload.tracking_number = formData.tracking_number;
-      if (formData.carrier) payload.carrier = formData.carrier;
-      if (formData.shipped_date) payload.shipped_date = formData.shipped_date;
-      if (formData.delivered_date) payload.delivered_date = formData.delivered_date;
+      const payload = {
+        tracking_number: formData.tracking_number,
+        carrier: formData.carrier,
+        shipped_date: formData.shipped_date,
+        delivered_date: formData.delivered_date || null
+      };
 
       const res = await fetch(`/api/shipments/${orderId}`, {
         method: 'PUT',
@@ -92,7 +108,7 @@ export default function ShipmentModal({ orderId, isOpen, onClose, orderStatus, o
         return;
       }
 
-      setSuccessMsg('Cập nhật thông tin vận đơn thành công');
+      setSuccessMsg('Cập nhật thông tin vận đơn thành công!');
       setTimeout(() => {
         if (onSave) onSave();
         onClose();
@@ -105,208 +121,97 @@ export default function ShipmentModal({ orderId, isOpen, onClose, orderStatus, o
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2000
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          padding: '24px',
-          maxWidth: '500px',
-          width: '90%',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>
-            {orderStatus === 'delivered' ? 'Xác nhận giao hàng' : 'Nhập thông tin vận đơn'}
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#999'
-            }}
-          >
-            ✕
-          </button>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md rounded-[3rem] border-none shadow-2xl p-0 overflow-hidden bg-white">
+        <DialogHeader className="p-10 bg-slate-50/50 border-b relative">
+           <div className="flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
+                 <Truck className="w-7 h-7" />
+              </div>
+              <div>
+                <DialogTitle className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+                    Thông tin vận đơn
+                </DialogTitle>
+                <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className="text-[10px] font-bold border-slate-200 text-slate-400 px-2 h-5 rounded-md uppercase">Order #{orderId}</Badge>
+                    {orderStatus === 'delivered' && <Badge className="bg-green-100 text-green-600 border-none text-[9px] font-black h-5 px-2 rounded-md uppercase">GIAO THÀNH CÔNG</Badge>}
+                </div>
+              </div>
+           </div>
+        </DialogHeader>
+
+        <div className="p-10 space-y-8 bg-white">
+          {error && (
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-red-50 text-red-600 text-xs font-bold border border-red-100 animate-in fade-in slide-in-from-top-2">
+               <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-green-50 text-green-600 text-xs font-bold border border-green-100 animate-in fade-in slide-in-from-top-2">
+               <CheckCircle2 className="w-4 h-4 shrink-0" /> {successMsg}
+            </div>
+          )}
+
+          <div className="space-y-6">
+             <div className="space-y-3">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mã vận đơn (Tracking No.) *</Label>
+                <Input 
+                  value={formData.tracking_number} 
+                  onChange={e => setFormData(p => ({...p, tracking_number: e.target.value}))}
+                  placeholder="VD: 1234567890"
+                  className="h-14 rounded-2xl bg-slate-50 border-none font-black text-slate-800 placeholder:text-slate-200 px-6 shadow-inner focus-visible:ring-primary/10"
+                />
+             </div>
+
+             <div className="space-y-3">
+                <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Đơn vị vận chuyển *</Label>
+                <Select value={formData.carrier} onValueChange={handleCarrierChange}>
+                   <SelectTrigger className="h-14 rounded-2xl bg-slate-50 border-none font-black text-slate-800 px-6 shadow-inner focus:ring-primary/10">
+                      <SelectValue placeholder="-- Chọn nhà vận chuyển --" />
+                   </SelectTrigger>
+                   <SelectContent className="rounded-2xl shadow-2xl border-none ring-1 ring-slate-100">
+                      {carriers.map(c => (
+                        <SelectItem key={c} value={c} className="rounded-xl font-bold py-3">{c}</SelectItem>
+                      ))}
+                   </SelectContent>
+                </Select>
+             </div>
+
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                   <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ngày gửi hàng *</Label>
+                   <Input 
+                      type="date"
+                      value={formData.shipped_date}
+                      onChange={e => setFormData(p => ({...p, shipped_date: e.target.value}))}
+                      className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-800 px-6 shadow-inner focus-visible:ring-primary/10"
+                   />
+                </div>
+                <div className="space-y-3">
+                   <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ngày đã giao (Opt.)</Label>
+                   <Input 
+                      type="date"
+                      value={formData.delivered_date}
+                      onChange={e => setFormData(p => ({...p, delivered_date: e.target.value}))}
+                      className="h-14 rounded-2xl bg-slate-50 border-none font-bold text-slate-800 px-6 shadow-inner focus-visible:ring-primary/10"
+                   />
+                </div>
+             </div>
+          </div>
         </div>
 
-        {error && (
-          <div
-            style={{
-              marginBottom: '16px',
-              padding: '12px',
-              backgroundColor: '#fee2e2',
-              color: '#991b1b',
-              borderRadius: '6px',
-              fontSize: '14px'
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {successMsg && (
-          <div
-            style={{
-              marginBottom: '16px',
-              padding: '12px',
-              backgroundColor: '#ecfdf5',
-              color: '#065f46',
-              borderRadius: '6px',
-              fontSize: '14px'
-            }}
-          >
-            {successMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600, color: '#374151' }}>
-              Mã vận đơn *
-            </label>
-            <input
-              type="text"
-              name="tracking_number"
-              value={formData.tracking_number}
-              onChange={handleChange}
-              placeholder="VD: 1234567890"
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600, color: '#374151' }}>
-              Nhà vận chuyển *
-            </label>
-            <select
-              name="carrier"
-              value={formData.carrier}
-              onChange={handleChange}
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            >
-              <option value="">-- Chọn nhà vận chuyển --</option>
-              {carriers.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600, color: '#374151' }}>
-              Ngày gửi hàng *
-            </label>
-            <input
-              type="date"
-              name="shipped_date"
-              value={formData.shipped_date}
-              onChange={handleChange}
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: 600, color: '#374151' }}>
-              Ngày giao hàng (tuỳ chọn)
-            </label>
-            <input
-              type="date"
-              name="delivered_date"
-              value={formData.delivered_date}
-              onChange={handleChange}
-              placeholder="--/--/--"
-              style={{
-                width: '100%',
-                padding: '10px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-                color: formData.delivered_date ? '#000' : '#999'
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '10px',
-                backgroundColor: '#f3f4f6',
-                color: '#374151',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              Huỷ
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                flex: 1,
-                padding: '10px',
-                backgroundColor: '#065f46',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.6 : 1
-              }}
-            >
-              {loading ? 'Đang lưu...' : 'Lưu'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <DialogFooter className="p-8 border-t bg-slate-50/50 flex justify-end gap-3 px-10">
+           <Button variant="ghost" onClick={onClose} className="rounded-2xl h-12 px-8 font-black uppercase text-xs">HUỶ BỎ</Button>
+           <Button 
+              onClick={handleSubmit} 
+              disabled={loading} 
+              className="rounded-2xl h-12 px-12 font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 bg-primary hover:scale-105 active:scale-95 transition-all outline-none border-none"
+           >
+              {loading ? 'ĐANG LƯU...' : 'CẬP NHẬT'}
+           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

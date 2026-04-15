@@ -1,4 +1,5 @@
 const blogService = require('../services/blogService');
+const { validationResult } = require('express-validator');
 const { updateBlogInRAG, deleteBlogFromRAG } = require('../services/ragService');
 
 /**
@@ -20,7 +21,11 @@ const getAllBlogs = async (req, res) => {
 };
 
 // Lấy bài viết chi tiết
-const getBlogDetail = async (req, res) => {
+async function getBlogDetail(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { id } = req.params;
     const result = await blogService.getBlogDetail(id);
@@ -135,6 +140,10 @@ const getAllBlogsAdmin = async (req, res) => {
 
 // Tạo bài viết
 const createBlog = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { title, content, category, thumbnail_image, status } = req.body;
     
@@ -169,6 +178,10 @@ const createBlog = async (req, res) => {
 
 // Cập nhật bài viết
 const updateBlog = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { id } = req.params;
     const { title, content, category, thumbnail_image, status } = req.body;
@@ -224,7 +237,11 @@ const deleteBlog = async (req, res) => {
 };
 
 // Thêm comment
-const addComment = async (req, res) => {
+const addComment = async function createBlog(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
   try {
     const { id } = req.params;
     const { content } = req.body;

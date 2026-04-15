@@ -1,6 +1,5 @@
 const { cartModel, orderModel, productModel, userModel } = require('../models');
 const { pool } = require('../config/mysql');
-const { update } = require('../models/orderModel');
 
 class OrderService {
   // Xem thông tin checkout
